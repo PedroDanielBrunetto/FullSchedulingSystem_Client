@@ -1,137 +1,202 @@
 import React, { useState } from 'react';
 import InputMask from 'react-input-mask';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import Modal from 'react-modal';
+import { addDays, format, isSameDay } from 'date-fns';
+
+const initialDaysToShow = 7;
+
+Modal.setAppElement('#root');
 
 export default function FormCalendar() {
+  const [daysToShow, setDaysToShow] = useState(initialDaysToShow);
   const [startDate, setStartDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState('09:00');
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [cpf, setCpf] = useState('');
+  const [name, setName] = useState('');
+  const [observation, setObservation] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const openModal = (date, time) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
+
+  const generateTimes = () => {
+    const times = [];
+    let start = 7 * 60; // 7:00 em minutos
+    const end = 21 * 60; // 21:00 em minutos
+    while (start <= end) {
+      const hours = Math.floor(start / 60);
+      const minutes = start % 60;
+      const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      times.push(time);
+      start += 30; // Incremento de 30 minutos
+    }
+    return times;
+  };
+
+  const handleCpfChange = (e) => {
+    setCpf(e.target.value);
+    if (e.target.value === '123.456.789-00') {
+      setName('Sync Up');
+    } else {
+      setName('');
+    }
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    console.log('Form submitted:', { cpf, name, selectedDate, selectedTime, observation });
+    closeModal();
+  };
+
+  const loadMoreDays = () => {
+    setDaysToShow(daysToShow + 7);
+  };
 
   return (
-    <div className="">
-      <div className="relative">
-        <section className="w-full h-[40vh] lg:h-[55vh] bg-cover bg-center brightness-50" style={{ background: 'black' }}></section>
-        <div className="absolute top-1/2 left-[5%] md:left-[10%] -translate-y-1/2 text-white">
-          <h1 className="text-3xl md:text-5xl font-bold">Nova Consulta</h1>
-          <p className="text-sm md:text-lg">Agendar nova consulta abaixo.</p>
+    <div className="flex flex-col items-center">
+
+      <div className="w-full max-w-4xl p-4">
+        <h1 className="text-3xl font-bold mb-4 text-center">Nova Consulta</h1>
+
+        {/* Seletor de Data */}
+        <div className="flex overflow-x-scroll mb-4 space-x-2">
+          {Array.from({ length: daysToShow }).map((_, index) => {
+            const date = addDays(new Date(), index);
+            const isSelected = isSameDay(date, startDate);
+            return (
+              <button
+                key={index}
+                className={`min-w-[120px] p-2 rounded ${isSelected ? 'bg-red-500' : 'bg-blue-500'} text-white`}
+                onClick={() => setStartDate(date)}
+              >
+                {format(date, 'dd MMM')}
+              </button>
+            );
+          })}
+          <button
+            className="min-w-[120px] p-2 bg-gray-500 text-white rounded"
+            onClick={loadMoreDays}
+          >
+            Mais dias
+          </button>
         </div>
-      </div>
 
-      <div className="w-full h-[1200px] md:h-[60vh] lg:h-[130vh] bg-blue-300 relative">
-        <div className="absolute -top-[3%] md:-top-[10%] left-1/2 -translate-x-1/2 grid grid-cols-1 md:grid-cols-3 h-fit w-4/5 md:w-[90%] lg:w-4/5 rounded shadow overflow-hidden text-white">
-          <div className="p-2 md:p-4 h-full bg-gray-800 col-span-2">
-            <form>
+        {/* Horários Disponíveis */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {generateTimes().map((time, index) => (
+            <button
+              key={index}
+              className="p-2 bg-gray-800 text-white rounded"
+              onClick={() => openModal(startDate, time)}
+            >
+              {time}
+            </button>
+          ))}
+        </div>
 
-              <div className="flex flex-col md:flex-row justify-around items-start md:items-center pt-8 p-4">
-                <h2 className="text-2xl md:text-3xl font-semibold">Novo Agendamento</h2>
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-mail-forward" width="33" height="33" viewBox="0 0 24 24" strokeWidth="1.5" stroke="#fff" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M12 18h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
-                  <path d="M3 6l9 6l9 -6" />
-                  <path d="M15 18h6" />
-                  <path d="M18 15l3 3l-3 3" />
-                </svg>
+        {/* Modal */}
+        <Modal
+          isOpen={modalIsOpen}
+          onRequestClose={closeModal}
+          className="w-full flex justify-center items-center"
+          overlayClassName="modal-overlay"
+          contentLabel="Agendamento"
+        >
+          <div className="relative w-full md:w-[718px] bg-white rounded shadow-lg p-6">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+              onClick={closeModal}
+            >
+              &times;
+            </button>
+            <form onSubmit={handleFormSubmit} className="w-full">
+              <div className="mb-4">
+                <label className="block font-semibold">CPF <span className="text-red-500">&#42;</span></label>
+                <InputMask
+                  className="border border-gray-300 p-2 rounded w-full"
+                  placeholder="Digite o CPF do paciente cadastrado"
+                  required
+                  mask="999.999.999-99"
+                  value={cpf}
+                  onChange={handleCpfChange}
+                />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 px-4 md:py-12 md:px-8 text-sm">
-                <div className="flex flex-col gap-1">
-                  <label className="font-semibold">
-                    CPF <span className="text-red-500">&#42;</span>
-                  </label>
-                  <InputMask className="border-[1px] border-white bg-gray-800 p-2 rounded-md" placeholder="Digite o CPF do paciente cadastrado" required name="name" mask="999.999.999-99" />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-semibold">Nome</label>
-                  <input className="border-[1px] border-white bg-gray-800 p-2 rounded-md" placeholder="Nome do Paciente" required name="nome" type="text" disabled />
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-3">
-  <div className="flex flex-col gap-1">
-    <label className="font-semibold">Data <span className="text-red-500">&#42;</span></label>
-    <DatePicker
-      selected={startDate}
-      onChange={(date) => setStartDate(date)}
-      className="border-[1px] border-white bg-gray-800 p-2 rounded-md text-white"
-      dateFormat="dd/MM/yyyy"
-      placeholderText="Selecione a data"
-    />
-  </div>
-
-  <div className="flex flex-col gap-1">
-    <label className="font-semibold">Horário <span className="text-red-500">&#42;</span></label>
-    <input
-      className="border-[1px] border-white bg-gray-800 p-2 rounded-md"
-      placeholder="Horário da Consulta"
-      required
-      name="time"
-      type="time"
-      min="08:00"
-      max="21:00"
-      value={selectedTime}
-      onChange={(e) => setSelectedTime(e.target.value)}
-    />
-  </div>
-
-  <div className="flex flex-col gap-1">
-    <label className="font-semibold">Intervalo <span className="text-red-500">&#42;</span></label>
-    <select
-      className="border-[1px] border-white bg-gray-800 p-2 rounded-md text-white"
-      required
-    >
-      <option value="30">30 minutos</option>
-      <option value="60">1 hora</option>
-      <option value="90">1 hora e 30 minutos</option>
-      <option value="120">2 horas</option>
-    </select>
-  </div>
-</div>
-
-
-                <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="font-semibold">Mensagem <span className="text-red-500">&#42;</span></label>
-                  <input className="border-[1px] border-white bg-gray-800 p-2 rounded-md" placeholder="Coloque alguma observação" required name="message" type="text" />
-                </div>
+              <div className="mb-4">
+                <label className="block font-semibold">Nome</label>
+                <input
+                  className="border border-gray-300 p-2 rounded w-full"
+                  placeholder="Nome do Paciente"
+                  required
+                  type="text"
+                  value={name}
+                  disabled
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block font-semibold">Data <span className="text-red-500">&#42;</span></label>
+                <input
+                  className="border border-gray-300 p-2 rounded w-full"
+                  type="text"
+                  value={format(selectedDate, 'dd/MM/yyyy')}
+                  disabled
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block font-semibold">Horário <span className="text-red-500">&#42;</span></label>
+                <input
+                  className="border border-gray-300 p-2 rounded w-full"
+                  type="text"
+                  value={selectedTime}
+                  disabled
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block font-semibold">Observação</label>
+                <input
+                  className="border border-gray-300 p-2 rounded w-full"
+                  placeholder="Coloque alguma observação"
+                  type="text"
+                  value={observation}
+                  onChange={(e) => setObservation(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end mb-7">
+                <button className="bg-blue-500 text-white py-2 px-4 rounded" type="submit">Agendar</button>
               </div>
             </form>
-
-            <div className="flex items-center justify-center md:justify-end py-4 px-8">
-              <button className="py-2 px-4 md:py-4 md:px-6 bg-gray-800 rounded-md border-2 border-white flex items-center gap-2 hover:scale-95 transition-all">
-                <span className="text-xl">Agendar</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-brand-telegram" width="30" height="30" viewBox="0 0 24 24" strokeWidth="1.5" stroke="#fff" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4" />
-                </svg>
-              </button>
-            </div>
           </div>
-
-          <div className="py-6 px-4 h-[500px] md:h-full bg-blue-800 grid grid-cols-1 grid-rows-5">
-            <h2 className="text-xl lg:text-2xl text-center md:text-start font-semibold">Contato Suporte</h2>
-            <div className="row-span-4 flex flex-col items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-mail-share" width="35" height="35" viewBox="0 0 24 24" strokeWidth="1.5" stroke="#fff" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <path d="M13 19h-8a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
-                <path d="M3 6l9 6l9 -6" />
-                <path d="M16 22l5 -5" />
-                <path d="M21 21.5v-4.5h-4.5" />
-              </svg>
-              <span>pedrodanielbm@hotmail.com</span>
-            </div>
-
-            <div className="flex justify-center md:justify-start items-center gap-4">
-              <a title="youtube" href="https://www.linkedin.com/in/PedroDanielBrunetto/">
-                <img className="h-8 w-8 invert" src="https://www.svgrepo.com/show/521936/youtube.svg" /></a>
-              <a title="linkedin" href="https://www.linkedin.com/in/PedroDanielBrunetto/">
-                <img className="h-12 w-12 invert" src="https://www.svgrepo.com/show/520815/linkedin.svg" /></a>
-              <a title="instagram" href="https://www.instagram.com/pedrodanielbrunetto/">
-                <img className="h-8 w-8 invert" src="https://www.svgrepo.com/show/521711/instagram.svg" /></a>
-              <a title="github" href="https://github.com/PedroDanielBrunetto">
-                <img className="h-8 w-8 invert" src="https://www.svgrepo.com/show/512317/github-142.svg" /></a>
-            </div>
-          </div>
-        </div>
+        </Modal>
       </div>
     </div>
   );
 }
+
+// Estilos personalizados para o modal
+const customStyles = {
+  content: {
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
+    width: '90%',
+    maxWidth: '400px',
+    padding: '20px',
+    zIndex: 1000,
+  },
+  overlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    zIndex: 999,
+  },
+};
+
+Modal.defaultStyles = customStyles;
