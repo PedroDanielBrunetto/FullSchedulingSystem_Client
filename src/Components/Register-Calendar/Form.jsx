@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputMask from 'react-input-mask';
 import Modal from 'react-modal';
 import { addDays, format, isSameDay } from 'date-fns';
+import axios from 'axios';
 
 const initialDaysToShow = 7;
 
@@ -16,10 +17,27 @@ export default function FormCalendar() {
   const [name, setName] = useState('');
   const [observation, setObservation] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [availableTimes, setAvailableTimes] = useState([]);
+  const [endTime, setEndTime] = useState('');
+
+  useEffect(() => {
+    fetchAvailableTimes(startDate);
+  }, [startDate]);
+
+  const fetchAvailableTimes = async (date) => {
+    try {
+      const bookedTimes = ['15:30', '17:30', '18:00', '18:30'];
+      const times = generateTimes().filter(time => !bookedTimes.includes(time));
+      setAvailableTimes(times);
+    } catch (error) {
+      console.error('Erro ao buscar horários disponíveis:', error);
+    }
+  };
 
   const openModal = (date, time) => {
     setSelectedDate(date);
     setSelectedTime(time);
+    setEndTime(getEndTime(time));
     setModalIsOpen(true);
   };
 
@@ -41,6 +59,15 @@ export default function FormCalendar() {
     return times;
   };
 
+  const getEndTime = (startTime) => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + 30;
+    const endHours = Math.floor(endMinutes / 60);
+    const endMinutesFormatted = endMinutes % 60;
+    return `${endHours.toString().padStart(2, '0')}:${endMinutesFormatted.toString().padStart(2, '0')}`;
+  };
+
   const handleCpfChange = (e) => {
     setCpf(e.target.value);
     if (e.target.value === '123.456.789-00') {
@@ -52,7 +79,7 @@ export default function FormCalendar() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', { cpf, name, selectedDate, selectedTime, observation });
+    console.log('Form submitted:', { cpf, name, selectedDate, selectedTime, endTime, observation });
     closeModal();
   };
 
@@ -62,11 +89,9 @@ export default function FormCalendar() {
 
   return (
     <div className="flex flex-col items-center">
-
       <div className="w-full max-w-4xl p-4">
         <h1 className="text-3xl font-bold mb-4 text-center">Nova Consulta</h1>
 
-        {/* Seletor de Data */}
         <div className="flex overflow-x-scroll mb-4 space-x-2">
           {Array.from({ length: daysToShow }).map((_, index) => {
             const date = addDays(new Date(), index);
@@ -89,9 +114,8 @@ export default function FormCalendar() {
           </button>
         </div>
 
-        {/* Horários Disponíveis */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {generateTimes().map((time, index) => (
+          {availableTimes.map((time, index) => (
             <button
               key={index}
               className="p-2 bg-gray-800 text-white rounded"
@@ -102,7 +126,6 @@ export default function FormCalendar() {
           ))}
         </div>
 
-        {/* Modal */}
         <Modal
           isOpen={modalIsOpen}
           onRequestClose={closeModal}
@@ -150,12 +173,22 @@ export default function FormCalendar() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block font-semibold">Horário <span className="text-red-500">&#42;</span></label>
+                <label className="block font-semibold">Horário Inicial <span className="text-red-500">&#42;</span></label>
                 <input
                   className="border border-gray-300 p-2 rounded w-full"
                   type="text"
                   value={selectedTime}
                   disabled
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block font-semibold">Horário Final <span className="text-red-500">&#42;</span></label>
+                <input
+                  className="border border-gray-300 p-2 rounded w-full"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  required
                 />
               </div>
               <div className="mb-4">
@@ -179,7 +212,6 @@ export default function FormCalendar() {
   );
 }
 
-// Estilos personalizados para o modal
 const customStyles = {
   content: {
     top: '50%',
