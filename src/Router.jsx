@@ -1,10 +1,10 @@
 import { Route, Routes } from "react-router-dom";
-import Home from "./Pages/Index";
-import LoginCliente from "./Pages/Client/LoginClient";
-import MainAdmin from "./Pages/Admin/MainAdmin";
-import Configurations from "./Pages/Admin/Configurations";
-import ScheduleAdmin from "./Pages/Admin/ScheduleAdmin";
-import ListClients from "./Pages/Admin/ListClients";
+import Home from "./Pages/HomePage.jsx";
+import LoginCliente from "./Pages/Client/LoginClient.jsx";
+import MainAdmin from "./Pages/Admin/MainAdmin.jsx";
+import Configurations from "./Pages/Admin/Configurations.jsx";
+import ScheduleAdmin from "./Pages/Admin/ScheduleAdmin.jsx";
+import ListClients from "./Pages/Admin/ListClients.jsx";
 
 export default function Router() {
 	return (
