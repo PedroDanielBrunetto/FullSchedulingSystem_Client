@@ -3,6 +3,7 @@ import InputMask from 'react-input-mask';
 import Modal from 'react-modal';
 import { addDays, format, isSameDay } from 'date-fns';
 import axios from 'axios';
+import './FormCalendar.css';
 
 const initialDaysToShow = 7;
 
@@ -19,6 +20,8 @@ export default function FormCalendar() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [availableTimes, setAvailableTimes] = useState([]);
   const [endTime, setEndTime] = useState('');
+  const [isRegistered, setIsRegistered] = useState(true);
+  const [phone, setPhone] = useState('');
 
   useEffect(() => {
     fetchAvailableTimes(startDate);
@@ -43,6 +46,16 @@ export default function FormCalendar() {
 
   const closeModal = () => {
     setModalIsOpen(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setCpf('');
+    setName('');
+    setObservation('');
+    setSelectedTime(null);
+    setEndTime('');
+    setPhone('');
   };
 
   const generateTimes = () => {
@@ -79,7 +92,10 @@ export default function FormCalendar() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', { cpf, name, selectedDate, selectedTime, endTime, observation });
+    const data = isRegistered
+      ? { cpf, name, selectedDate, selectedTime, endTime, observation }
+      : { name, phone, selectedDate, selectedTime, endTime, observation };
+    console.log('Form submitted:', data);
     closeModal();
   };
 
@@ -142,27 +158,85 @@ export default function FormCalendar() {
             </button>
             <form onSubmit={handleFormSubmit} className="w-full">
               <div className="mb-4">
-                <label className="block font-semibold">CPF <span className="text-red-500">&#42;</span></label>
-                <InputMask
-                  className="border border-gray-300 p-2 rounded w-full"
-                  placeholder="Digite o CPF do paciente cadastrado"
-                  required
-                  mask="999.999.999-99"
-                  value={cpf}
-                  onChange={handleCpfChange}
-                />
+                <label className="block font-semibold">Tipo de Paciente <span className="text-red-500">&#42;</span></label>
+                <div className="flex items-center">
+                  <label className="custom-radio mr-4">
+                    <input
+                      type="radio"
+                      name="patientType"
+                      value="registered"
+                      checked={isRegistered}
+                      onChange={() => setIsRegistered(true)}
+                    />
+                    <span className="checkmark"></span>
+                    Cadastrado
+                  </label>
+                  <label className="custom-radio">
+                    <input
+                      type="radio"
+                      name="patientType"
+                      value="notRegistered"
+                      checked={!isRegistered}
+                      onChange={() => setIsRegistered(false)}
+                    />
+                    <span className="checkmark"></span>
+                    Não cadastrado
+                  </label>
+                </div>
               </div>
-              <div className="mb-4">
-                <label className="block font-semibold">Nome</label>
-                <input
-                  className="border border-gray-300 p-2 rounded w-full"
-                  placeholder="Nome do Paciente"
-                  required
-                  type="text"
-                  value={name}
-                  disabled
-                />
-              </div>
+
+              {isRegistered ? (
+                <>
+                  <div className="mb-4">
+                    <label className="block font-semibold">CPF <span className="text-red-500">&#42;</span></label>
+                    <InputMask
+                      className="border border-gray-300 p-2 rounded w-full"
+                      placeholder="Digite o CPF do paciente cadastrado"
+                      required
+                      mask="999.999.999-99"
+                      value={cpf}
+                      onChange={handleCpfChange}
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block font-semibold">Nome</label>
+                    <input
+                      className="border border-gray-300 p-2 rounded w-full"
+                      placeholder="Nome do Paciente"
+                      required
+                      type="text"
+                      value={name}
+                      disabled
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <label className="block font-semibold">Nome do Paciente <span className="text-red-500">&#42;</span></label>
+                    <input
+                      className="border border-gray-300 p-2 rounded w-full"
+                      placeholder="Nome do Paciente"
+                      required
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block font-semibold">Celular do Paciente <span className="text-red-500">&#42;</span></label>
+                    <InputMask
+                      className="border border-gray-300 p-2 rounded w-full"
+                      placeholder="(99) 99999-9999"
+                      required
+                      mask="(99) 99999-9999"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="mb-4">
                 <label className="block font-semibold">Data <span className="text-red-500">&#42;</span></label>
                 <input

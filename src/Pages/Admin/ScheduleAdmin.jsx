@@ -4,11 +4,11 @@ import FormCalendar from "../../Components/Register-Calendar/Form";
 import { addDays, format, startOfDay } from 'date-fns';
 
 const mockAppointments = {
-  "2024-05-24": [
+  "2024-06-03": [
     { id: 1, time: "09:00", patient: "John Doe", observation: "Check-up" },
     { id: 2, time: "10:30", patient: "Jane Smith", observation: "Consultation" }
   ],
-  "2024-05-21": [
+  "2024-06-05": [
     { id: 3, time: "11:00", patient: "Michael Johnson", observation: "Follow-up" }
   ]
 };
