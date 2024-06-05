@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from "../../Components/Dashboard/Sidebar";
 import axios from 'axios';
+import withAuth from "../../Components/withAuth.jsx";
 
-export default function Configurations() {
+function Configurations() {
   const [hoursBefore, setHoursBefore] = useState('');
   const [message, setMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -171,3 +172,5 @@ export default function Configurations() {
     </main>
   );
 }
+
+export default withAuth(Configurations);

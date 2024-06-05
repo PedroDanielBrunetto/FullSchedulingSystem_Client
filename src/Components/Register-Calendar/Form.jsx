@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import InputMask from 'react-input-mask';
 import Modal from 'react-modal';
-import { addDays, format, isSameDay } from 'date-fns';
-import axios from 'axios';
+import { addDays, format, isSameDay, isWithinInterval, parseISO, subMinutes } from 'date-fns';
 import './FormCalendar.css';
+import { registerAppointment, NotRegisteredAppointment } from "../../api.js";
 
 const initialDaysToShow = 7;
 
 Modal.setAppElement('#root');
 
-export default function FormCalendar() {
+export default function FormCalendar({ setSelectedDate }) {
   const [daysToShow, setDaysToShow] = useState(initialDaysToShow);
   const [startDate, setStartDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(null);
@@ -17,28 +17,81 @@ export default function FormCalendar() {
   const [cpf, setCpf] = useState('');
   const [name, setName] = useState('');
   const [observation, setObservation] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [availableTimes, setAvailableTimes] = useState([]);
   const [endTime, setEndTime] = useState('');
   const [isRegistered, setIsRegistered] = useState(true);
   const [phone, setPhone] = useState('');
+  const [appointmentsForSelectedDate, setAppointmentsForSelectedDate] = useState([]);
+  const [feedback, setFeedback] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchAvailableTimes(startDate);
-  }, [startDate]);
-
-  const fetchAvailableTimes = async (date) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
     try {
-      const bookedTimes = ['15:30', '17:30', '18:00', '18:30'];
-      const times = generateTimes().filter(time => !bookedTimes.includes(time));
-      setAvailableTimes(times);
+      const data = isRegistered
+        ?
+        {
+          'cpf': cpf.replace(/\D/g, ''),
+          dateInitial: format(startDate, 'dd/MM/yyyy') + ' ' + selectedTime,
+          dateFinal: format(startDate, 'dd/MM/yyyy') + ' ' + endTime,
+          message: observation
+        }
+        :
+        {
+          'name': name,
+          cel: phone.replace(/\D/g, ''),
+          dateInitial: format(startDate, 'dd/MM/yyyy') + ' ' + selectedTime,
+          dateFinal: format(startDate, 'dd/MM/yyyy') + ' ' + endTime,
+          message: observation
+        };
+
+      if (isRegistered) {
+        await registerAppointment(data);
+      } else {
+        await NotRegisteredAppointment(data);
+      }
+
+      setFeedback(<span style={{ color: 'green' }}>Consulta agendada com sucesso!</span>);
+      setTimeout(() => {
+        window.location.reload();
+      }, 2500);
     } catch (error) {
-      console.error('Erro ao buscar horários disponíveis:', error);
+      console.error('Erro ao registrar consulta:', error);
+      setFeedback(<span style={{ color: 'red' }}>Erro ao registrar consulta. Por favor, tente novamente.</span>);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const openModal = (date, time) => {
-    setSelectedDate(date);
+  useEffect(() => {
+    const storedAppointments = JSON.parse(localStorage.getItem('appointments'));
+    if (storedAppointments) {
+      const formattedSelectedDate = format(startDate, 'yyyy-MM-dd');
+      setAppointmentsForSelectedDate(storedAppointments[formattedSelectedDate] || []);
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    fetchAvailableTimes();
+  }, [startDate, appointmentsForSelectedDate]);
+
+  const fetchAvailableTimes = () => {
+    const bookedTimes = appointmentsForSelectedDate.map(appointment => {
+      const start = parseISO(`${appointment.date_appointment}T${appointment.initial}`);
+      const end = parseISO(`${appointment.date_appointment}T${appointment.final}`);
+      return { start, end: subMinutes(end, 1) };
+    });
+
+    const times = generateTimes().filter(time => {
+      const selectedDateTime = parseISO(`${format(startDate, 'yyyy-MM-dd')}T${time}`);
+      return !bookedTimes.some(({ start, end }) => isWithinInterval(selectedDateTime, { start, end }));
+    });
+
+    setAvailableTimes(times);
+  };
+
+  const openModal = (time) => {
     setSelectedTime(time);
     setEndTime(getEndTime(time));
     setModalIsOpen(true);
@@ -90,15 +143,6 @@ export default function FormCalendar() {
     }
   };
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    const data = isRegistered
-      ? { cpf, name, selectedDate, selectedTime, endTime, observation }
-      : { name, phone, selectedDate, selectedTime, endTime, observation };
-    console.log('Form submitted:', data);
-    closeModal();
-  };
-
   const loadMoreDays = () => {
     setDaysToShow(daysToShow + 7);
   };
@@ -116,7 +160,10 @@ export default function FormCalendar() {
               <button
                 key={index}
                 className={`min-w-[120px] p-2 rounded ${isSelected ? 'bg-red-500' : 'bg-blue-500'} text-white`}
-                onClick={() => setStartDate(date)}
+                onClick={() => {
+                  setStartDate(date);
+                  setSelectedDate(date);
+                }}
               >
                 {format(date, 'dd MMM')}
               </button>
@@ -135,7 +182,7 @@ export default function FormCalendar() {
             <button
               key={index}
               className="p-2 bg-gray-800 text-white rounded"
-              onClick={() => openModal(startDate, time)}
+              onClick={() => openModal(time)}
             >
               {time}
             </button>
@@ -151,12 +198,12 @@ export default function FormCalendar() {
         >
           <div className="relative w-full md:w-[718px] bg-white rounded shadow-lg p-6">
             <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl md:mt-0 mt-7"
               onClick={closeModal}
             >
               &times;
             </button>
-            <form onSubmit={handleFormSubmit} className="w-full">
+            <form onSubmit={handleSubmit} className="w-full md:mt-0 mt-5">
               <div className="mb-4">
                 <label className="block font-semibold">Tipo de Paciente <span className="text-red-500">&#42;</span></label>
                 <div className="flex items-center">
@@ -198,17 +245,6 @@ export default function FormCalendar() {
                       onChange={handleCpfChange}
                     />
                   </div>
-                  <div className="mb-4">
-                    <label className="block font-semibold">Nome</label>
-                    <input
-                      className="border border-gray-300 p-2 rounded w-full"
-                      placeholder="Nome do Paciente"
-                      required
-                      type="text"
-                      value={name}
-                      disabled
-                    />
-                  </div>
                 </>
               ) : (
                 <>
@@ -242,7 +278,7 @@ export default function FormCalendar() {
                 <input
                   className="border border-gray-300 p-2 rounded w-full"
                   type="text"
-                  value={format(selectedDate, 'dd/MM/yyyy')}
+                  value={format(startDate, 'dd/MM/yyyy')}
                   disabled
                 />
               </div>
@@ -275,8 +311,15 @@ export default function FormCalendar() {
                   onChange={(e) => setObservation(e.target.value)}
                 />
               </div>
+              {feedback && <div className="text-center mt-4 md:text-xs">{feedback}</div>}
               <div className="flex justify-end mb-7">
-                <button className="bg-blue-500 text-white py-2 px-4 rounded" type="submit">Agendar</button>
+                <button
+                  className="bg-blue-500 text-white py-2 px-4 rounded"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Enviando...' : 'Agendar'}
+                </button>
               </div>
             </form>
           </div>
@@ -285,6 +328,7 @@ export default function FormCalendar() {
     </div>
   );
 }
+
 
 const customStyles = {
   content: {
