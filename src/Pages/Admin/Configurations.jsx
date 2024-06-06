@@ -1,27 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from "../../Components/Dashboard/Sidebar";
-import axios from 'axios';
 import withAuth from "../../Components/withAuth.jsx";
+import { getSettings, BalanceInquirySms, UpdateMessageSms, IntervalSendingAPI, UpdatePassword } from '../../api.js';
+import Cookies from 'js-cookie';
 
 function Configurations() {
   const [hoursBefore, setHoursBefore] = useState('');
   const [message, setMessage] = useState('');
+  const [smsBalance, setSmsBalance] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+
+  const [originalHoursBefore, setOriginalHoursBefore] = useState('');
+  const [originalMessage, setOriginalMessage] = useState('');
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordFeedback, setPasswordFeedback] = useState('');
 
   useEffect(() => {
     fetchApiSettings();
+    fetchSmsBalance();
   }, []);
 
   const fetchApiSettings = async () => {
     try {
-      const response = await axios.get('/api/settings');
-      setHoursBefore(response.data.hoursBefore);
-      setMessage(response.data.message);
+      const response = await getSettings();
+      const settings = response.settings;
+      const message = settings.Mensagem_enviada.replace(/\+/g, ' ');
+
+      setHoursBefore(settings.sending_interval);
+      setMessage(message);
+      setOriginalHoursBefore(settings.sending_interval);
+      setOriginalMessage(message);
     } catch (error) {
       console.error('Erro ao buscar configurações da API:', error);
+    }
+  };
+
+  const fetchSmsBalance = async () => {
+    try {
+      const response = await BalanceInquirySms();
+      setSmsBalance(response.saldo);
+    } catch (error) {
+      console.error('Erro ao buscar saldo de SMS:', error);
     }
   };
 
@@ -36,10 +58,18 @@ function Configurations() {
 
   const handleUpdate = async () => {
     try {
-      await axios.put('/api/settings', {
-        hoursBefore,
-        message,
-      });
+      // Verifica alterações e chama as APIs apropriadas
+      if (message !== originalMessage) {
+        const formattedMessage = message.split(' ').join('+');
+        await UpdateMessageSms({ message: formattedMessage });
+      }
+
+      if (hoursBefore !== originalHoursBefore) {
+        await IntervalSendingAPI({ interval: hoursBefore });
+      }
+
+      // Recarrega as configurações após a atualização
+      fetchApiSettings();
       setIsEditing(false);
     } catch (error) {
       console.error('Erro ao atualizar configurações da API:', error);
@@ -48,22 +78,26 @@ function Configurations() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+    setPasswordFeedback('');
     if (newPassword !== confirmPassword) {
-      alert('As senhas não coincidem');
+      setPasswordFeedback('As senhas não coincidem');
       return;
     }
     try {
-      await axios.put('/api/update-password', {
+      const userId = Cookies.get('userId');
+      const data = {
+        userId,
         currentPassword,
-        newPassword,
-      });
+        newPassword
+      };
+      const response = await UpdatePassword(data);
+      setPasswordFeedback(response.message);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      alert('Senha atualizada com sucesso');
     } catch (error) {
       console.error('Erro ao atualizar a senha:', error);
-      alert('Erro ao atualizar a senha');
+      setPasswordFeedback('Erro ao atualizar a senha');
     }
   };
 
@@ -97,6 +131,9 @@ function Configurations() {
               <p className="text-sm text-gray-500 mt-1">
                 Use <strong>@data</strong> para a data da consulta e <strong>@horario</strong> para o horário da consulta.
               </p>
+            </div>
+            <div>
+              <p className="block font-semibold">Saldo de SMS: {smsBalance}</p>
             </div>
             {isEditing ? (
               <div className="flex space-x-4">
@@ -160,6 +197,11 @@ function Configurations() {
                 className="border border-gray-300 p-2 rounded w-full"
               />
             </div>
+            {passwordFeedback && (
+              <p className={`text-sm mt-1 ${passwordFeedback.includes('sucesso') ? 'text-green-500' : 'text-red-500'}`}>
+                {passwordFeedback}
+              </p>
+            )}
             <button
               type="submit"
               className="bg-blue-500 text-white py-2 px-4 rounded"

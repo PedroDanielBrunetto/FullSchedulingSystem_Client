@@ -3,7 +3,7 @@ import Sidebar from "../../Components/Dashboard/Sidebar";
 import FormCalendar from "../../Components/Register-Calendar/Form";
 import { addDays, format, startOfDay } from 'date-fns';
 import withAuth from "../../Components/withAuth.jsx";
-import { getAppointmentsByDay } from "../../api.js";
+import { getAppointmentsByDay, CancelAppointment } from "../../api.js";
 
 function ScheduleAdmin() {
   const [showForm, setShowForm] = useState(false);
@@ -48,7 +48,7 @@ function ScheduleAdmin() {
 
   useEffect(() => {
     const storedAppointments = localStorage.getItem('appointments');
-  
+
     if (storedAppointments) {
       const parsedAppointments = JSON.parse(storedAppointments);
       const selectedFormattedDate = format(selectedDate, 'yyyy-MM-dd');
@@ -57,7 +57,7 @@ function ScheduleAdmin() {
       fetchAppointments(format(selectedDate, 'yyyy-MM-dd'));
     }
   }, [selectedDate]);
-  
+
   const fetchAppointments = async (date) => {
     try {
       const data = await getAppointmentsByDay(date);
@@ -82,6 +82,15 @@ function ScheduleAdmin() {
       }
     } catch (error) {
       console.error('Erro ao obter consultas:', error);
+    }
+  };
+
+  const handleCancelAppointment = async (id, identify) => {
+    try {
+      await CancelAppointment(id, identify);
+      fetchAppointments(formattedSelectedDate); // Recarrega appointments
+    } catch (error) {
+      console.error('Erro ao cancelar consulta:', error);
     }
   };
 
@@ -114,12 +123,16 @@ function ScheduleAdmin() {
           >
             Agendar Nova Consulta
           </button>
-          <button
-            className="bg-gray-500 text-white px-4 py-2 rounded-md mt-4"
-            onClick={handleHideForm}
-          >
-            Voltar
-          </button>
+          {!showForm ?
+            <></>
+            :
+            <button
+              className="bg-gray-500 text-white px-4 py-2 rounded-md mt-4"
+              onClick={handleHideForm}
+            >
+              Voltar
+            </button>
+          }
         </div>
         {!showForm ? (
           <div>
@@ -127,10 +140,17 @@ function ScheduleAdmin() {
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {appointmentsForSelectedDate.length > 0 ? (
                 appointmentsForSelectedDate.map(appointment => (
-                  <div key={appointment.id} className="border p-4 rounded-md shadow-lg">
+                  <div key={appointment.id} className="border p-4 rounded-md shadow-2xl">
                     <p className="font-semibold">Horário: {appointment.initial} - {appointment.final}</p>
                     <p>Paciente: {appointment.name}</p>
                     <p>Observação: {appointment.message}</p>
+                    <div className="flex justify-end -mt-5">
+                      <button
+                        onClick={() => handleCancelAppointment(appointment.id, appointment.identify)}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#ff0505" viewBox="0 0 256 256"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-50.34-74.34L139.31,152l18.35,18.34a8,8,0,0,1-11.32,11.32L128,163.31l-18.34,18.35a8,8,0,0,1-11.32-11.32L116.69,152,98.34,133.66a8,8,0,0,1,11.32-11.32L128,140.69l18.34-18.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (

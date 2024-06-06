@@ -78,9 +78,6 @@ export default function Home() {
                 />
                 <span className="text-sm text-gray-700 pt-1">Lembrar-me</span>
               </label>
-              <div className="w-1/2 text-right">
-                <a href="#" className="text-blue-500 text-sm tracking-tight">Esqueceu a senha?</a>
-              </div>
             </div>
             {error && <div className="w-full md:w-full px-3 mb-6"><span className="text-red-500">{error}</span></div>}
             <div className="w-full md:w-full px-3 mb-6">

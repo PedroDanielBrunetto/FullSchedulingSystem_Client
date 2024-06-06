@@ -60,9 +60,8 @@ function ListClients() {
       setFeedback(<span style={{ color: 'green' }}>Paciente atualizado com sucesso!</span>);
       console.log('Paciente atualizado:', updatedPaciente);
       setTimeout(() => {
-        closeModal();
-        setFeedback(null);
-      }, 1800);
+        location.reload();
+      }, 1000);
     } catch (error) {
       setFeedback(<span style={{ color: 'red' }}>Erro ao atualizar paciente, tente novamente.</span>);
       console.error('Erro ao atualizar paciente:', error);

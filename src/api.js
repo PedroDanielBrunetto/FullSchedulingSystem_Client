@@ -73,3 +73,65 @@ export const NotRegisteredAppointment = async (data) => {
     throw error;
   }
 };
+
+export const CancelAppointment = async (id_scheduling, identify) => {
+  try {
+    const response = await api.delete("/cancel-appointment", {
+      data: { id_scheduling, identify },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao cancelar consulta", error);
+    throw error;
+  }
+};
+
+export const getSettings = async () => {
+  try {
+    const response = await api.get("/get-settings");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao trazer configurações", error);
+    throw error;
+  }
+};
+
+export const BalanceInquirySms = async () => {
+  try {
+    const response = await api.get("/verify-sms-credits");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao trazer api", error);
+    throw error;
+  }
+};
+
+export const UpdateMessageSms = async (data) => {
+  try {
+    const response = await api.put("/update-message-sms", data);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao atualizar mensagem", error);
+    throw error;
+  }
+}
+
+export const IntervalSendingAPI = async (data) => {
+  try {
+    const response = await api.put("/update-intervalAPI", data);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao atualizar intervalo", error);
+    throw error;
+  }
+}
+
+export const UpdatePassword = async (data) => {
+  try {
+    const response = await api.put("/update-password", data);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao atualizar senha", error);
+    throw error;
+  }
+}

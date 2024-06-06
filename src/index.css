@@ -10,3 +10,9 @@
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+@media (max-width: 768px) {
+  .graph-container {
+    width: calc(100% - 20px); /* Reduz 20px da largura para a margem */
+  }
+}

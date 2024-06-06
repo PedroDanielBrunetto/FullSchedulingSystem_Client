@@ -55,7 +55,7 @@ export default function FormCalendar({ setSelectedDate }) {
       setFeedback(<span style={{ color: 'green' }}>Consulta agendada com sucesso!</span>);
       setTimeout(() => {
         window.location.reload();
-      }, 2500);
+      }, 1200);
     } catch (error) {
       console.error('Erro ao registrar consulta:', error);
       setFeedback(<span style={{ color: 'red' }}>Erro ao registrar consulta. Por favor, tente novamente.</span>);

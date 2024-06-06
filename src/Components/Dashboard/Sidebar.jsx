@@ -55,7 +55,7 @@ const Sidebar = () => {
             </li>
           </ul>
         </div>
-        <a href='https://www.linkedin.com/in/PedroDanielBrunetto/' className="text-blue-500 text-sm mt-4">© 2024 Pedro Daniel Brunetto</a>
+        <a href='https://www.syncupbrasil.tech' className="text-white font-semibold text-sm mt-4 underline text-center">© 2024 SyncUp Brasil</a>
       </nav>
     </div>
   );
