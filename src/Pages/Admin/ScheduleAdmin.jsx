@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "../../Components/Dashboard/Sidebar";
 import FormCalendar from "../../Components/Register-Calendar/Form";
 import { addDays, format, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import withAuth from "../../Components/withAuth.jsx";
 import { getAppointmentsByDay, CancelAppointment } from "../../api.js";
 
@@ -106,7 +107,7 @@ function ScheduleAdmin() {
               className={`p-2 rounded-md border ${format(date, 'yyyy-MM-dd') === formattedSelectedDate ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               onClick={() => setSelectedDate(date)}
             >
-              {format(date, 'dd MMM')}
+              {format(date, 'dd MMM', { locale: ptBR })}
             </button>
           ))}
           <button
@@ -136,7 +137,7 @@ function ScheduleAdmin() {
         </div>
         {!showForm ? (
           <div>
-            <h2 className="text-xl font-bold mb-4">Consultas para {formattedSelectedDate}</h2>
+            <h2 className="text-xl font-bold mb-4">Consultas para {format(selectedDate, 'dd MMM')} - {format(selectedDate, 'EEEE', { locale: ptBR })}</h2>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {appointmentsForSelectedDate.length > 0 ? (
                 appointmentsForSelectedDate.map(appointment => (
